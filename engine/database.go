@@ -62,6 +62,16 @@ func (d *Database) getPartition(key string) uint8 {
 	return result
 }
 
+func (d *Database) FlushPartitions() {
+	wg := sync.WaitGroup{}
+	for _, p := range d.partitions {
+		wg.Add(1)
+		go p.persist(&wg)
+	}
+	wg.Wait()
+	log.Printf("successfully persisted %d partitions", len(d.partitions))
+}
+
 type Partition struct {
 	entries         map[string]Item
 	partitionNumber uint8
@@ -69,10 +79,10 @@ type Partition struct {
 	mutex           *sync.RWMutex
 }
 
-func InitializeDatabase(partitionNumber uint8, filePath string) (*Database, error) {
+func InitializeDatabase(partitionNumber uint8, filePath string) *Database {
 	db := &Database{}
 	db.new(partitionNumber, filePath)
-	return db, nil
+	return db
 }
 
 func (p *Partition) push(key string, value []byte) (Item, error) {
@@ -82,7 +92,6 @@ func (p *Partition) push(key string, value []byte) (Item, error) {
 		p.mutex.Lock()
 		p.entries[key] = i
 		p.mutex.Unlock()
-		go p.persist()
 		return i, nil
 	} else {
 		return Item{}, fmt.Errorf("item with key %s already present", key)
@@ -100,10 +109,10 @@ func (p *Partition) pop(key string) (*Item, error) {
 	}
 }
 
-func (p *Partition) persist() {
+func (p *Partition) persist(wg *sync.WaitGroup) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	fmt.Printf("attempt to persist partition : %d with file %s\n", p.partitionNumber, p.partitionPath)
+	defer wg.Done()
 	json, err := json.Marshal(p.entries)
 
 	if err != nil {
@@ -127,8 +136,6 @@ func (p *Partition) persist() {
 	if err != nil {
 		log.Fatalf("Errore nel flush dei dati al file: %s", err)
 	}
-
-	fmt.Println("Mappa salvata con successo su disco.")
 }
 
 type Item struct {
