@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/mi0772/nuke-go/engine"
 )
@@ -44,14 +46,26 @@ func main() {
 
 	database := engine.InitializeDatabase(PartitionNumber, PartFilePath)
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(5 * time.Minute)
 	go func() {
 		for range ticker.C {
 			log.Printf("flushing partition to disk")
 			database.FlushPartitions()
 		}
 	}()
-	time.Sleep(60 * time.Second)
-	ticker.Stop()
+
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+	r.GET("/keys", func(c *gin.Context) {
+		var keys = database.Keys()
+		c.JSON(http.StatusOK, gin.H{
+			"keys": keys,
+		})
+	})
+	r.Run() // listen and serve
 
 }

@@ -52,6 +52,24 @@ func (d *Database) Push(key string, value []byte) (Item, error) {
 	return d.partitions[d.getPartition(key)].push(key, value)
 }
 
+func (d *Database) Keys() []string {
+	var keySize = 0
+	var counter = 0
+	for _, d := range d.partitions {
+		keySize += len(d.entries)
+	}
+
+	var keys = make([]string, keySize)
+	for _, p := range d.partitions {
+
+		for k := range p.entries {
+			keys[counter] = k
+			counter += 1
+		}
+	}
+	return keys
+}
+
 func (d *Database) getPartition(key string) uint8 {
 	hasher := fnv.New64a()
 	hasher.Write([]byte(key))
