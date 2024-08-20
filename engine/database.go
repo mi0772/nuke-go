@@ -48,6 +48,14 @@ func (d *Database) new(partition uint8, pathFile string) {
 
 }
 
+func (d *Database) CountEntries() uint {
+	var total uint
+	for _, p := range d.partitions {
+		total += uint(len(p.entries))
+	}
+	return total
+}
+
 func (d *Database) Clear() uint {
 	var deleted uint
 	for _, p := range d.partitions {

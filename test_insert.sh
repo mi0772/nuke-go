@@ -4,7 +4,7 @@
 url="http://localhost:3000/push_string"
 
 # Numero di thread che vuoi usare
-num_threads=10
+num_threads=100
 
 # Funzione per generare una stringa casuale di lunghezza specificata
 generate_random_string() {

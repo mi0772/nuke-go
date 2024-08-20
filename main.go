@@ -27,6 +27,7 @@ func main() {
 
 	database := engine.InitializeDatabase(configuration.PartitionNumber, configuration.PartitionFilePath)
 
+	log.Printf("total entries in database is : %d", database.CountEntries())
 	ticker := time.NewTicker(5 * time.Minute)
 	go func() {
 		for range ticker.C {
