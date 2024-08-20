@@ -21,6 +21,7 @@ func (d *Database) new(partition uint8, pathFile string) {
 	d.pathFile = pathFile
 	d.partitions = make([]Partition, partition)
 
+	var partitionResumed = 0
 	for i, p := range d.partitions {
 		p.partitionNumber = uint8(i)
 		p.entries = make(map[string]Item)
@@ -28,8 +29,8 @@ func (d *Database) new(partition uint8, pathFile string) {
 		p.mutex = &sync.RWMutex{}
 
 		//try to load partitions from file
+
 		if _, err := os.Stat(p.partitionPath); err == nil {
-			fmt.Printf("File exists\n")
 			file, err := os.ReadFile(p.partitionPath)
 			if err != nil {
 				log.Fatalf("impossible read file partition %s", p.partitionPath)
@@ -38,11 +39,13 @@ func (d *Database) new(partition uint8, pathFile string) {
 			if err != nil {
 				log.Fatalf("impossibile unmarshal json content : %s", p.partitionPath)
 			}
-			log.Printf("successfully resumed partition : %d\n", p.partitionNumber)
+			partitionResumed += 1
 		}
 
 		d.partitions[i] = p
 	}
+	log.Printf("resumed %d partition from disk", partitionResumed)
+
 }
 
 func (d *Database) Pop(key string) (Item, error) {
@@ -95,6 +98,18 @@ func (d *Database) FlushPartitions() {
 	log.Printf("successfully persisted %d partitions", len(d.partitions))
 }
 
+func (d *Database) DetailsPartitions() []types.PartitionDetailsResponse {
+	var result = make([]types.PartitionDetailsResponse, 0)
+	for _, p := range d.partitions {
+		pd := types.PartitionDetailsResponse{
+			Partition: p.partitionNumber,
+			Entries:   uint(len(p.entries)),
+		}
+		result = append(result, pd)
+	}
+	return result
+}
+
 func InitializeDatabase(partitionNumber uint8, filePath string) *Database {
 	db := &Database{}
 	db.new(partitionNumber, filePath)
@@ -103,6 +118,6 @@ func InitializeDatabase(partitionNumber uint8, filePath string) *Database {
 
 type Item struct {
 	Key    string    `json:"key"`
-	Value  []byte    `json:"value"`
+	Value  []byte    `json:"value_b64"`
 	Expire time.Time `json:"expire"`
 }

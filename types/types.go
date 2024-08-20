@@ -5,12 +5,22 @@ type PushItemRequest struct {
 	Value []byte `json:"value"`
 }
 
+type PushItemStringRequest struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type PushItemFileRequest struct {
 	Key string `json:"key"`
 }
 
 type PopRequest struct {
 	Key string `json:"key"`
+}
+
+type PartitionDetailsResponse struct {
+	Partition uint8
+	Entries   uint
 }
 
 type KeysResponse struct {

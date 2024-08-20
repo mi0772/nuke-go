@@ -10,17 +10,6 @@ import (
 	"github.com/mi0772/nuke-go/types"
 )
 
-func ListKeys(c *gin.Context) {
-	database := getDatabase(c)
-
-	var keys = database.Keys()
-	var r = types.KeysResponse{Keys: keys}
-
-	c.JSON(http.StatusOK, gin.H{
-		"keys": r,
-	})
-}
-
 func Pop(c *gin.Context) {
 	database := getDatabase(c)
 	key := c.Param("key")
@@ -30,9 +19,7 @@ func Pop(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"item": item,
-	})
+	c.JSON(http.StatusOK, item)
 }
 
 func Read(c *gin.Context) {
@@ -44,21 +31,30 @@ func Read(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"item": item,
-	})
+	c.JSON(http.StatusOK, item)
+}
+
+func PushString(c *gin.Context) {
+	database := getDatabase(c)
+	var request types.PushItemStringRequest
+	if err := c.BindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	database.Push(request.Key, []byte(request.Value))
+	c.JSON(http.StatusCreated, gin.H{})
 }
 
 func PushFile(c *gin.Context) {
 	database := getDatabase(c)
-	// Il metodo FormFile gestisce il file caricato
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file is received"})
 		return
 	}
 
-	// Apri il file caricato
 	f, err := file.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -66,15 +62,11 @@ func PushFile(c *gin.Context) {
 	}
 	defer f.Close()
 
-	// Leggi il contenuto del file in memoria
 	fileBytes, err := io.ReadAll(f)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Ora il file è memorizzato in fileBytes come []byte
-	// Puoi fare ciò che desideri con fileBytes, ad esempio salvarlo in un database, elaborarlo, ecc.
 
 	metadataJSON := c.PostForm("request")
 	var request types.PushItemFileRequest
@@ -95,8 +87,7 @@ func PushFile(c *gin.Context) {
 		return
 	}
 
-	// In questo esempio, rispondiamo solo con la dimensione del file
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"item": json,
 	})
 }
