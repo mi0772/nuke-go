@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,4 +26,11 @@ func PartitionDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"details_partitition": result,
 	})
+}
+
+func Clear(c *gin.Context) {
+	database := getDatabase(c)
+
+	deleted := database.Clear()
+	c.JSON(http.StatusOK, fmt.Sprintf("deleted %d", deleted))
 }

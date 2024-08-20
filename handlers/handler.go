@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -42,7 +43,11 @@ func PushString(c *gin.Context) {
 		return
 	}
 
-	database.Push(request.Key, []byte(request.Value))
+	_, err := database.Push(request.Key, []byte(request.Value))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("key %s already present", request.Key)})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{})
 }
 

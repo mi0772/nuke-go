@@ -17,7 +17,7 @@ type Partition struct {
 }
 
 func (p *Partition) push(key string, value []byte) (Item, error) {
-	_, err := p.pop(key)
+	_, err := p.read(key)
 	if err != nil {
 		i := Item{Key: key, Value: value}
 		p.mutex.Lock()

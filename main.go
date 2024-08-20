@@ -38,6 +38,7 @@ func main() {
 	r := gin.Default()
 	r.Use(middleware.DatabaseMiddleware(database))
 	r.GET("/admin/keys", handlers.ListKeys)
+	r.DELETE("/admin/clear", handlers.Clear)
 	r.GET("/admin/partitions/details", handlers.PartitionDetails)
 	r.POST("/push_file", handlers.PushFile)
 	r.POST("/push_string", handlers.PushString)

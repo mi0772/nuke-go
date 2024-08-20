@@ -48,6 +48,17 @@ func (d *Database) new(partition uint8, pathFile string) {
 
 }
 
+func (d *Database) Clear() uint {
+	var deleted uint
+	for _, p := range d.partitions {
+		for k := range p.entries {
+			delete(p.entries, k)
+			deleted += 1
+		}
+	}
+	return deleted
+}
+
 func (d *Database) Pop(key string) (Item, error) {
 	return d.partitions[d.getPartition(key)].pop(key)
 }
@@ -84,7 +95,6 @@ func (d *Database) getPartition(key string) uint8 {
 	hash := hasher.Sum64()
 	numPartitions := uint64(len(d.partitions))
 	result := uint8(hash % numPartitions)
-	fmt.Printf("partizione selezionata : %d\n", result)
 	return result
 }
 
