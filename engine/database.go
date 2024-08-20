@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -9,6 +8,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/mi0772/nuke-go/types"
 )
 
 type Database struct {
@@ -44,7 +45,7 @@ func (d *Database) new(partition uint8, pathFile string) {
 	}
 }
 
-func (d *Database) Pop(key string) (*Item, error) {
+func (d *Database) Pop(key string) (Item, error) {
 	return d.partitions[d.getPartition(key)].pop(key)
 }
 
@@ -52,21 +53,25 @@ func (d *Database) Push(key string, value []byte) (Item, error) {
 	return d.partitions[d.getPartition(key)].push(key, value)
 }
 
-func (d *Database) Keys() []string {
-	var keySize = 0
-	var counter = 0
-	for _, d := range d.partitions {
-		keySize += len(d.entries)
+func (d *Database) Read(key string) (*Item, error) {
+	return d.partitions[d.getPartition(key)].read(key)
+}
+
+func (d *Database) Keys() []types.Key {
+	keySize := 0
+	for _, p := range d.partitions {
+		keySize += len(p.entries)
 	}
 
-	var keys = make([]string, keySize)
-	for _, p := range d.partitions {
+	keys := make([]types.Key, 0, keySize)
 
+	for _, p := range d.partitions {
 		for k := range p.entries {
-			keys[counter] = k
-			counter += 1
+			key := types.Key{Key: k, Partition: p.partitionNumber}
+			keys = append(keys, key)
 		}
 	}
+
 	return keys
 }
 
@@ -90,70 +95,10 @@ func (d *Database) FlushPartitions() {
 	log.Printf("successfully persisted %d partitions", len(d.partitions))
 }
 
-type Partition struct {
-	entries         map[string]Item
-	partitionNumber uint8
-	partitionPath   string
-	mutex           *sync.RWMutex
-}
-
 func InitializeDatabase(partitionNumber uint8, filePath string) *Database {
 	db := &Database{}
 	db.new(partitionNumber, filePath)
 	return db
-}
-
-func (p *Partition) push(key string, value []byte) (Item, error) {
-	_, err := p.pop(key)
-	if err != nil {
-		i := Item{Key: key, Value: value}
-		p.mutex.Lock()
-		p.entries[key] = i
-		p.mutex.Unlock()
-		return i, nil
-	} else {
-		return Item{}, fmt.Errorf("item with key %s already present", key)
-	}
-}
-
-func (p *Partition) pop(key string) (*Item, error) {
-	p.mutex.RLock()
-	item, ok := p.entries[key]
-	p.mutex.RUnlock()
-	if ok {
-		return &item, nil
-	} else {
-		return nil, fmt.Errorf("%s not present", key)
-	}
-}
-
-func (p *Partition) persist(wg *sync.WaitGroup) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	defer wg.Done()
-	json, err := json.Marshal(p.entries)
-
-	if err != nil {
-		log.Fatalf("cannot marshal partition data : %d\n", err)
-	}
-
-	file, err := os.Create(p.partitionPath)
-	if err != nil {
-		log.Fatalf("Errore nella creazione del file: %s", err)
-	}
-	defer file.Close()
-
-	writer := bufio.NewWriter(file)
-
-	_, err = writer.Write(json)
-	if err != nil {
-		log.Fatalf("Errore nella scrittura con il buffer: %s", err)
-	}
-
-	err = writer.Flush()
-	if err != nil {
-		log.Fatalf("Errore nel flush dei dati al file: %s", err)
-	}
 }
 
 type Item struct {

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -11,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/mi0772/nuke-go/engine"
+	"github.com/mi0772/nuke-go/handlers"
+	"github.com/mi0772/nuke-go/middleware"
 )
 
 var PartFilePath string
@@ -55,17 +56,11 @@ func main() {
 	}()
 
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	r.GET("/keys", func(c *gin.Context) {
-		var keys = database.Keys()
-		c.JSON(http.StatusOK, gin.H{
-			"keys": keys,
-		})
-	})
-	r.Run() // listen and serve
+	r.Use(middleware.DatabaseMiddleware(database))
+	r.GET("/keys", handlers.ListKeys)
+	r.POST("/push_file", handlers.PushFile)
+	r.GET("/pop/:key", handlers.Pop)
+	r.GET("/read/:key", handlers.Read)
+	r.Run()
 
 }
