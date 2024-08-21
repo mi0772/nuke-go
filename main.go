@@ -22,20 +22,26 @@ func main() {
 	var configuration = types.ParseConfiguration()
 
 	logf.Println("===================================================")
-	logf.Println("= N U K E  CACHE SERVER")
+	logf.Println("=             N U K E  CACHE SERVER               =  ")
 	logf.Println("===================================================")
 	logf.Printf("starting server with %d partition, all files will be stored in %s\n", configuration.PartitionNumber, configuration.PartitionFilePath)
 
 	database := engine.InitializeDatabase(configuration.PartitionNumber, configuration.PartitionFilePath)
 
 	logf.Printf("total entries in database is : %d", database.CountEntries())
-	ticker := time.NewTicker(5 * time.Minute)
-	go func() {
-		for range ticker.C {
-			logf.Printf("flushing partition to disk")
-			database.FlushPartitions()
-		}
-	}()
+
+	if configuration.PersistPeriod != -1 {
+		ticker := time.NewTicker(time.Duration(configuration.PersistPeriod) * time.Minute)
+		logf.Printf("persist will be executed every %d minutes", configuration.PersistPeriod)
+		go func() {
+			for range ticker.C {
+				logf.Printf("flushing partition to disk")
+				database.FlushPartitions()
+			}
+		}()
+	} else {
+		logf.Printf("persistence disabled !")
+	}
 
 	go servers.StartHTTPServer(database)
 	go servers.StartTCPServer(database)

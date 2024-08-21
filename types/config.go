@@ -10,6 +10,7 @@ type Configuration struct {
 	PartitionFilePath string
 	PartitionNumber   uint8
 	ServerPort        string
+	PersistPeriod     int8
 }
 
 func ParseConfiguration() Configuration {
@@ -33,6 +34,17 @@ func ParseConfiguration() Configuration {
 		result.ServerPort = "8080"
 	} else {
 		result.ServerPort = v
+	}
+
+	if _pp, ok := os.LookupEnv("PERSIST_PERIOD"); ok == false {
+		result.PersistPeriod = -1
+	} else {
+		persistPeriod, err := strconv.ParseInt(_pp, 10, 8)
+		if err != nil {
+			log.Fatal("persist period must be integer")
+		} else {
+			result.PersistPeriod = int8(persistPeriod)
+		}
 	}
 	return result
 }

@@ -44,8 +44,6 @@ func (d *Database) new(partition uint8, pathFile string) {
 
 		d.partitions[i] = p
 	}
-	log.Printf("resumed %d partition from disk", partitionResumed)
-
 }
 
 func (d *Database) CountEntries() uint {
