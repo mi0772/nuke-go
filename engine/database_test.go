@@ -14,10 +14,7 @@ func TestWrite(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	database, err := InitializeDatabase(10, ".")
-	if err != nil {
-		t.Fatal("error initializing database")
-	}
+	database := InitializeDatabase(10, ".")
 
 	for i := range 10000 {
 		log.Printf("memorized %d item\n", i)
@@ -31,10 +28,7 @@ func TestWrite(t *testing.T) {
 }
 
 func TestResume(t *testing.T) {
-	_, err := InitializeDatabase(10, ".")
-	if err != nil {
-		t.Fatal("error initializing database")
-	}
+	_ = InitializeDatabase(10, ".")
 }
 
 func memorize(database *Database, key string, value []byte, wg *sync.WaitGroup) {
