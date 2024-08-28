@@ -44,8 +44,11 @@ func main() {
 		logf.Printf("persistence disabled !")
 	}
 
-	go http.StartHTTPServer(database)
-	go tcp.StartTCPServer(database)
+	if configuration.HttpServerEnabled {
+		go http.StartHTTPServer(database, &configuration)
+	}
+
+	go tcp.StartTCPServer(database, &configuration)
 
 	select {}
 }

@@ -1,13 +1,15 @@
 package http
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/mi0772/nuke-go/engine"
 	handlers2 "github.com/mi0772/nuke-go/servers/http/handlers"
 	"github.com/mi0772/nuke-go/servers/http/middleware"
+	"github.com/mi0772/nuke-go/types"
 )
 
-func StartHTTPServer(database *engine.Database) {
+func StartHTTPServer(database *engine.Database, config *types.Configuration) {
 	r := gin.Default()
 
 	r.Use(middleware.DatabaseMiddleware(database))
@@ -18,5 +20,5 @@ func StartHTTPServer(database *engine.Database) {
 	r.POST("/push_string", handlers2.PushString)
 	r.GET("/pop/:key", handlers2.Pop)
 	r.GET("/read/:key", handlers2.Read)
-	r.Run()
+	r.Run(fmt.Sprintf(":%s", config.HttpServerPort))
 }

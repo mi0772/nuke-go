@@ -2,6 +2,8 @@ package tcp
 
 import (
 	"errors"
+	"github.com/mi0772/nuke-go/engine"
+	"github.com/mi0772/nuke-go/types"
 	"log"
 	"strings"
 )
@@ -14,6 +16,11 @@ type InputCommand struct {
 }
 
 func NewInputCommand(input string) (InputCommand, error) {
+	if strings.Contains(input, "QUIT") {
+		return InputCommand{
+			commandIdentifier: "QUIT",
+		}, nil
+	}
 	parts := splitInput(input)
 
 	// Controlla se ci sono abbastanza parti per formare un comando valido
@@ -48,7 +55,7 @@ func CommandBuilder(userCommand InputCommand) (Command, error) {
 }
 
 type Command interface {
-	Process(command *InputCommand)
+	Process(command *InputCommand, database *engine.Database) (*engine.Item, types.NukeResponseCode)
 }
 
 type PopCommand struct {
@@ -60,16 +67,29 @@ type PushCommand struct {
 type ReadCommand struct {
 }
 
-func (c *PopCommand) Process(command *InputCommand) {
-	log.Printf("ciao sono Process di PopCommand : %s", command)
+func (c *PopCommand) Process(command *InputCommand, database *engine.Database) (*engine.Item, types.NukeResponseCode) {
+	item, err := database.Pop(command.key)
+	if err != nil {
+		return nil, types.NOT_FOUND
+	}
+	return &item, types.OK
 }
 
-func (c *PushCommand) Process(command *InputCommand) {
+func (c *PushCommand) Process(command *InputCommand, database *engine.Database) (*engine.Item, types.NukeResponseCode) {
 	log.Printf("ciao sono Process di PushCommand : %s", command)
+	item, err := database.Push(command.key, []byte(command.parameters[0]))
+	if err != nil {
+		return nil, types.DUPLICATE_KEY
+	}
+	return &item, types.OK
 }
 
-func (c *ReadCommand) Process(command *InputCommand) {
-	log.Printf("ciao sono Process di ReadCommand : %s", command)
+func (c *ReadCommand) Process(command *InputCommand, database *engine.Database) (*engine.Item, types.NukeResponseCode) {
+	item, err := database.Pop(command.key)
+	if err != nil {
+		return nil, types.NOT_FOUND
+	}
+	return &item, types.OK
 }
 
 func splitInput(input string) []string {

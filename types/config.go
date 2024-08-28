@@ -9,8 +9,10 @@ import (
 type Configuration struct {
 	PartitionFilePath string
 	PartitionNumber   uint8
-	ServerPort        string
+	HttpServerPort    string
 	PersistPeriod     int8
+	TpcServerPort     string
+	HttpServerEnabled bool
 }
 
 func ParseConfiguration() Configuration {
@@ -30,10 +32,26 @@ func ParseConfiguration() Configuration {
 			result.PartitionNumber = uint8(num)
 		}
 	}
-	if v, ok := os.LookupEnv("PORT"); ok == false {
-		result.ServerPort = "8080"
+	if v, ok := os.LookupEnv("HTTP_PORT"); ok == false {
+		result.HttpServerPort = "8080"
 	} else {
-		result.ServerPort = v
+		result.HttpServerPort = v
+	}
+
+	if v, ok := os.LookupEnv("TPC_PORT"); ok == false {
+		result.TpcServerPort = "18123"
+	} else {
+		result.TpcServerPort = v
+	}
+
+	if v, ok := os.LookupEnv("HTTP_SERVER"); ok == true {
+		if num, err := strconv.ParseInt(v, 10, 8); err != nil {
+			log.Fatal("variable HTTP_SERVER must be int")
+		} else {
+			result.HttpServerEnabled = int8(num) > 0
+		}
+	} else {
+		result.HttpServerEnabled = false
 	}
 
 	if _pp, ok := os.LookupEnv("PERSIST_PERIOD"); ok == false {

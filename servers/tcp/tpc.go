@@ -2,6 +2,8 @@ package tcp
 
 import (
 	"bufio"
+	"fmt"
+	"github.com/mi0772/nuke-go/types"
 	"log"
 	"net"
 	"os"
@@ -18,15 +20,15 @@ const (
 
 var logf = log.New(os.Stdout, "[TCP-Server] ", log.LstdFlags)
 
-func StartTCPServer(database *engine.Database) {
-	listener, err := net.Listen("tcp", ":9090")
+func StartTCPServer(database *engine.Database, config *types.Configuration) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", config.TpcServerPort))
 	if err != nil {
 		logf.Fatalf("Errore nel creare il server TCP:%s", err)
 		return
 	}
 	defer listener.Close()
 
-	logf.Println("Server TCP in ascolto su :9090")
+	logf.Println("Server TCP in ascolto su :", config.TpcServerPort)
 
 	jobs := make(chan net.Conn, maxGoroutines)
 	var wg sync.WaitGroup
@@ -72,23 +74,23 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 		command, err := NewInputCommand(message)
 		if err != nil {
 			_, err = conn.Write([]byte("command error\n"))
-			return
+			continue
 		}
-		cmd, _ := CommandBuilder(command)
-		cmd.Process(&command)
-
-		logf.Print("Messaggio ricevuto: ", message)
-
-		// Controllo se il messaggio è "q" per chiudere la connessione
-		if message == "q" {
-			logf.Println("Messaggio 'q' ricevuto, chiusura connessione.")
-			return
+		if command.commandIdentifier == "QUIT" {
+			break
 		}
 
-		_, err = conn.Write([]byte("Messaggio ricevuto\n"))
+		cmd, err := CommandBuilder(command)
 		if err != nil {
-			logf.Println("Errore nella scrittura:", err)
-			return
+			_, err = conn.Write([]byte("invalid command\n"))
+			continue
+		}
+		item, result := cmd.Process(&command, database)
+		if result < 0 {
+			conn.Write([]byte(fmt.Sprintf("error:%d", err)))
+		} else {
+			conn.Write(item.Value)
+			conn.Write([]byte("\n"))
 		}
 	}
 }
