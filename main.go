@@ -1,13 +1,14 @@
 package main
 
 import (
+	"github.com/mi0772/nuke-go/servers/http"
+	"github.com/mi0772/nuke-go/servers/tcp"
 	"log"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/mi0772/nuke-go/engine"
-	"github.com/mi0772/nuke-go/servers"
 	"github.com/mi0772/nuke-go/types"
 )
 
@@ -43,8 +44,8 @@ func main() {
 		logf.Printf("persistence disabled !")
 	}
 
-	go servers.StartHTTPServer(database)
-	go servers.StartTCPServer(database)
+	go http.StartHTTPServer(database)
+	go tcp.StartTCPServer(database)
 
 	select {}
 }

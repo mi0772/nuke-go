@@ -1,4 +1,4 @@
-package servers
+package tcp
 
 import (
 	"bufio"
@@ -68,6 +68,10 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 
 		// Rimuove gli spazi bianchi (inclusi \r e \n) all'inizio e alla fine
 		message = strings.TrimSpace(message)
+
+		command := NewInputCommand(message)
+		cmd, _ := CommandBuilder(command)
+		cmd.Process()
 
 		logf.Print("Messaggio ricevuto: ", message)
 
