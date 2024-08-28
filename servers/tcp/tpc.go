@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/mi0772/nuke-go/types"
 	"log"
@@ -68,7 +69,6 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 			return
 		}
 
-		// Rimuove gli spazi bianchi (inclusi \r e \n) all'inizio e alla fine
 		message = strings.TrimSpace(message)
 
 		command, err := NewInputCommand(message)
@@ -76,7 +76,7 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 			_, err = conn.Write([]byte("command error\n"))
 			continue
 		}
-		if command.commandIdentifier == "QUIT" {
+		if command.commandIdentifier == Quit {
 			break
 		}
 
@@ -89,8 +89,13 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 		if result < 0 {
 			conn.Write([]byte(fmt.Sprintf("error:%d", err)))
 		} else {
-			conn.Write(item.Value)
-			conn.Write([]byte("\n"))
+			jsonData, err := json.Marshal(item)
+			if err != nil {
+				_, err = conn.Write([]byte(fmt.Sprintf("errore nella serializzazione JSON: %v\n", err)))
+				continue
+			}
+
+			conn.Write(jsonData)
 		}
 	}
 }
