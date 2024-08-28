@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"errors"
 	"log"
 	"strings"
 )
@@ -12,8 +13,13 @@ type InputCommand struct {
 	parameters        []string
 }
 
-func NewInputCommand(input string) InputCommand {
+func NewInputCommand(input string) (InputCommand, error) {
 	parts := splitInput(input)
+
+	// Controlla se ci sono abbastanza parti per formare un comando valido
+	if len(parts) < 2 {
+		return InputCommand{}, errors.New("invalid command")
+	}
 
 	cmd := InputCommand{
 		rawCommand:        input,
@@ -25,15 +31,24 @@ func NewInputCommand(input string) InputCommand {
 		cmd.parameters = parts[2:]
 	}
 
-	return cmd
+	return cmd, nil
 }
 
 func CommandBuilder(userCommand InputCommand) (Command, error) {
-	return &PopCommand{}, nil
+	switch userCommand.commandIdentifier {
+	case "POP":
+		return &PopCommand{}, nil
+	case "PUSH":
+		return &PushCommand{}, nil
+	case "READ":
+		return &ReadCommand{}, nil
+	default:
+		return nil, errors.New("invalid command")
+	}
 }
 
 type Command interface {
-	Process()
+	Process(command *InputCommand)
 }
 
 type PopCommand struct {
@@ -45,8 +60,16 @@ type PushCommand struct {
 type ReadCommand struct {
 }
 
-func (c *PopCommand) Process() {
-	log.Printf("ciao sono Process di GetCommand")
+func (c *PopCommand) Process(command *InputCommand) {
+	log.Printf("ciao sono Process di PopCommand : %s", command)
+}
+
+func (c *PushCommand) Process(command *InputCommand) {
+	log.Printf("ciao sono Process di PushCommand : %s", command)
+}
+
+func (c *ReadCommand) Process(command *InputCommand) {
+	log.Printf("ciao sono Process di ReadCommand : %s", command)
 }
 
 func splitInput(input string) []string {

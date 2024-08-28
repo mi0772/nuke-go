@@ -55,7 +55,7 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 	reader := bufio.NewReader(conn)
 
 	for {
-		conn.SetReadDeadline(time.Now().Add(5 * time.Second)) // Timeout per la lettura
+		conn.SetReadDeadline(time.Now().Add(20 * time.Second)) // Timeout per la lettura
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			if err, ok := err.(net.Error); ok && err.Timeout() {
@@ -69,9 +69,13 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 		// Rimuove gli spazi bianchi (inclusi \r e \n) all'inizio e alla fine
 		message = strings.TrimSpace(message)
 
-		command := NewInputCommand(message)
+		command, err := NewInputCommand(message)
+		if err != nil {
+			_, err = conn.Write([]byte("command error\n"))
+			return
+		}
 		cmd, _ := CommandBuilder(command)
-		cmd.Process()
+		cmd.Process(&command)
 
 		logf.Print("Messaggio ricevuto: ", message)
 
