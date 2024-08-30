@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/mi0772/nuke-go/types"
 	"log"
@@ -55,6 +54,8 @@ func StartTCPServer(database *engine.Database, config *types.Configuration) {
 func handleConnection(conn net.Conn, database *engine.Database) {
 	defer conn.Close()
 
+	conn.Write([]byte("hello!\n"))
+
 	reader := bufio.NewReader(conn)
 
 	for {
@@ -89,13 +90,7 @@ func handleConnection(conn net.Conn, database *engine.Database) {
 		if result < 0 {
 			conn.Write([]byte(fmt.Sprintf("error:%d", err)))
 		} else {
-			jsonData, err := json.Marshal(item)
-			if err != nil {
-				_, err = conn.Write([]byte(fmt.Sprintf("errore nella serializzazione JSON: %v\n", err)))
-				continue
-			}
-
-			conn.Write(jsonData)
+			conn.Write(item)
 		}
 	}
 }
